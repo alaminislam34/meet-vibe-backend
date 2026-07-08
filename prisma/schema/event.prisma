@@ -1,0 +1,43 @@
+model Event {
+  id              String        @id @default(uuid())
+  creatorId       String
+  status          String        @default("DRAFT") // "DRAFT", "PUBLISHED", "CANCELLED"
+  creationStep    Int           @default(1)
+
+  // Step 1 – Basic Info
+  coverImage      String?
+  title           String        @default("")
+  category        String        @default("")    // e.g. "Music", "Sports", "Tech"
+  eventType       String        @default("")    // e.g. "Conference", "Party", "Workshop"
+  capacity        Int           @default(0)
+  isFree          Boolean       @default(true)
+  price           Decimal       @default(0.00)
+
+  // Step 2 – Date & Time
+  startDate       DateTime?
+  startTime       String?
+  endDate         DateTime?
+  endTime         String?
+  timezone        String        @default("UTC")
+
+  // Step 3 – Location
+  venueType       String        @default("OFFLINE") // "ONLINE", "OFFLINE"
+  venueName       String?
+  address         String?
+  mapLat          Float?
+  mapLng          Float?
+  onlineLink      String?       // Zoom / Meet link
+
+  // Step 4 – Details
+  agenda          String?       // What to expect
+  whatToBring     String?
+  tags            String[]      @default([])
+  visibility      String        @default("PUBLIC") // "PUBLIC", "FRIENDS_ONLY"
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  creator         User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participants    Participant[]
+  chatGroup       ChatGroup?
+}

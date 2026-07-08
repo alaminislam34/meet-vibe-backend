@@ -1,0 +1,14 @@
+model Participant {
+  id            String   @id @default(uuid())
+  eventId       String
+  userId        String
+  status        String   // "PENDING_PAYMENT", "PENDING_APPROVAL", "APPROVED", "REJECTED"
+  transactionId String?  // User-submitted payment proof
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}

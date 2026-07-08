@@ -1,0 +1,28 @@
+export declare const env: {
+    PORT: number;
+    NODE_ENV: "development" | "production" | "test";
+    FRONTEND_URL: string;
+    BACKEND_URL: string;
+    DATABASE_URL: string;
+    JWT_SECRET: string;
+    JWT_EXPIRES_IN: string;
+    GOOGLE_CLIENT_ID?: string | undefined;
+    GOOGLE_CLIENT_SECRET?: string | undefined;
+    GOOGLE_CALLBACK_URL?: string | undefined;
+    APPLE_CLIENT_ID?: string | undefined;
+    APPLE_TEAM_ID?: string | undefined;
+    APPLE_KEY_ID?: string | undefined;
+    APPLE_PRIVATE_KEY?: string | undefined;
+    APPLE_CALLBACK_URL?: string | undefined;
+    AWS_ACCESS_KEY_ID?: string | undefined;
+    AWS_SECRET_ACCESS_KEY?: string | undefined;
+    AWS_REGION?: string | undefined;
+    AWS_S3_BUCKET_NAME?: string | undefined;
+    STRIPE_API_KEY?: string | undefined;
+    STRIPE_WEBHOOK_SECRET?: string | undefined;
+    SMTP_HOST?: string | undefined;
+    SMTP_PORT?: number | undefined;
+    SMTP_USER?: string | undefined;
+    SMTP_PASS?: string | undefined;
+    SMTP_FROM?: string | undefined;
+};

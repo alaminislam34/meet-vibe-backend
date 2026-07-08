@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "Meet Vibe API – Complete Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "base", "value": "http://localhost:5000/api/v1" }],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        { "name": "Register", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\",\"password\":\"password123\",\"name\":\"Test User\"}" }, "url": { "raw": "{{base}}/auth/register", "host": ["{{base}}"], "path": ["auth","register"] } } },
+        { "name": "Verify OTP", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\",\"otp\":\"123456\"}" }, "url": { "raw": "{{base}}/auth/verify-otp", "host": ["{{base}}"], "path": ["auth","verify-otp"] } } },
+        { "name": "Resend OTP", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\"}" }, "url": { "raw": "{{base}}/auth/resend-otp", "host": ["{{base}}"], "path": ["auth","resend-otp"] } } },
+        { "name": "Login", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\",\"password\":\"password123\"}" }, "url": { "raw": "{{base}}/auth/login", "host": ["{{base}}"], "path": ["auth","login"] } } },
+        { "name": "Forgot Password", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\"}" }, "url": { "raw": "{{base}}/auth/forgot-password", "host": ["{{base}}"], "path": ["auth","forgot-password"] } } },
+        { "name": "Reset Password", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"email\":\"user@example.com\",\"otp\":\"123456\",\"password\":\"newpassword123\"}" }, "url": { "raw": "{{base}}/auth/reset-password", "host": ["{{base}}"], "path": ["auth","reset-password"] } } },
+        { "name": "Logout", "request": { "method": "POST", "url": { "raw": "{{base}}/auth/logout", "host": ["{{base}}"], "path": ["auth","logout"] } } },
+        { "name": "Google OAuth", "request": { "method": "GET", "url": { "raw": "{{base}}/auth/google", "host": ["{{base}}"], "path": ["auth","google"] } } },
+        { "name": "Apple OAuth", "request": { "method": "GET", "url": { "raw": "{{base}}/auth/apple", "host": ["{{base}}"], "path": ["auth","apple"] } } }
+      ]
+    },
+    {
+      "name": "👤 User Profile",
+      "item": [
+        { "name": "Get My Profile", "request": { "method": "GET", "url": { "raw": "{{base}}/users/profile", "host": ["{{base}}"], "path": ["users","profile"] } } },
+        { "name": "Update Profile", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"name\":\"Updated Name\",\"image\":\"https://example.com/avatar.jpg\"}" }, "url": { "raw": "{{base}}/users/profile", "host": ["{{base}}"], "path": ["users","profile"] } } },
+        { "name": "Verify Identity (Gov ID + Selfie)", "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [{"key":"govId","type":"file","src":[]},{"key":"selfie","type":"file","src":[]}] }, "url": { "raw": "{{base}}/users/verify-identity", "host": ["{{base}}"], "path": ["users","verify-identity"] } } },
+        { "name": "Delete Account", "request": { "method": "DELETE", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"reason\":\"No longer need this app\"}" }, "url": { "raw": "{{base}}/users/account", "host": ["{{base}}"], "path": ["users","account"] } } }
+      ]
+    },
+    {
+      "name": "💳 Subscriptions",
+      "item": [
+        { "name": "Subscribe (Get Plan)", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"plan\":\"PREMIUM\"}" }, "url": { "raw": "{{base}}/subscriptions/subscribe", "host": ["{{base}}"], "path": ["subscriptions","subscribe"] } } }
+      ]
+    },
+    {
+      "name": "📅 Events (5-Step Wizard)",
+      "item": [
+        { "name": "Step 1 – Basic Info", "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [{"key":"coverImage","type":"file","src":[]},{"key":"title","value":"Tech Meetup 2026","type":"text"},{"key":"category","value":"Technology","type":"text"},{"key":"eventType","value":"Meetup","type":"text"},{"key":"capacity","value":"50","type":"text"},{"key":"isFree","value":"false","type":"text"},{"key":"price","value":"15","type":"text"}] }, "url": { "raw": "{{base}}/events/step1", "host": ["{{base}}"], "path": ["events","step1"] } } },
+        { "name": "Step 2 – Date & Time", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"eventId\":\"REPLACE_WITH_EVENT_ID\",\"startDate\":\"2026-12-20\",\"startTime\":\"18:00\",\"endDate\":\"2026-12-20\",\"endTime\":\"21:00\",\"timezone\":\"Asia/Dhaka\"}" }, "url": { "raw": "{{base}}/events/step2", "host": ["{{base}}"], "path": ["events","step2"] } } },
+        { "name": "Step 3 – Location", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"eventId\":\"REPLACE_WITH_EVENT_ID\",\"venueType\":\"OFFLINE\",\"venueName\":\"Dhaka Tech Hub\",\"address\":\"Banani, Dhaka\",\"mapLat\":23.7937,\"mapLng\":90.4066}" }, "url": { "raw": "{{base}}/events/step3", "host": ["{{base}}"], "path": ["events","step3"] } } },
+        { "name": "Step 4 – Details", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"eventId\":\"REPLACE_WITH_EVENT_ID\",\"agenda\":\"Networking, talks, demos\",\"whatToBring\":\"Laptop, business cards\",\"tags\":[\"tech\",\"networking\"],\"visibility\":\"PUBLIC\"}" }, "url": { "raw": "{{base}}/events/step4", "host": ["{{base}}"], "path": ["events","step4"] } } },
+        { "name": "Step 5 – Publish", "request": { "method": "POST", "url": { "raw": "{{base}}/events/publish/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["events","publish","REPLACE_WITH_EVENT_ID"] } } },
+        { "name": "List All Events (with filters)", "request": { "method": "GET", "url": { "raw": "{{base}}/events?category=Technology&venueType=OFFLINE&isFree=false", "host": ["{{base}}"], "path": ["events"], "query": [{"key":"category","value":"Technology"},{"key":"venueType","value":"OFFLINE"},{"key":"isFree","value":"false"}] } } },
+        { "name": "My Events", "request": { "method": "GET", "url": { "raw": "{{base}}/events/mine", "host": ["{{base}}"], "path": ["events","mine"] } } },
+        { "name": "Get Event Details", "request": { "method": "GET", "url": { "raw": "{{base}}/events/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["events","REPLACE_WITH_EVENT_ID"] } } },
+        { "name": "Delete Event", "request": { "method": "DELETE", "url": { "raw": "{{base}}/events/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["events","REPLACE_WITH_EVENT_ID"] } } }
+      ]
+    },
+    {
+      "name": "🎟️ Participations",
+      "item": [
+        { "name": "Join Event", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"eventId\":\"REPLACE_WITH_EVENT_ID\"}" }, "url": { "raw": "{{base}}/participations/join", "host": ["{{base}}"], "path": ["participations","join"] } } },
+        { "name": "Submit Bank Transfer", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"eventId\":\"REPLACE_WITH_EVENT_ID\",\"transactionId\":\"TXN-12345\"}" }, "url": { "raw": "{{base}}/participations/pay-transfer", "host": ["{{base}}"], "path": ["participations","pay-transfer"] } } },
+        { "name": "Get Pending Payments (Host)", "request": { "method": "GET", "url": { "raw": "{{base}}/participations/pending-payments/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["participations","pending-payments","REPLACE_WITH_EVENT_ID"] } } },
+        { "name": "Verify Payment – Approve/Reject (Host)", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"participationId\":\"REPLACE_WITH_PARTICIPATION_ID\",\"action\":\"APPROVED\"}" }, "url": { "raw": "{{base}}/participations/verify-payment", "host": ["{{base}}"], "path": ["participations","verify-payment"] } } }
+      ]
+    },
+    {
+      "name": "🤝 Connections",
+      "item": [
+        { "name": "Send Connection Request", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"receiverId\":\"REPLACE_WITH_USER_ID\",\"requestMessage\":\"Hey! We met at the hackathon.\"}" }, "url": { "raw": "{{base}}/connections/request", "host": ["{{base}}"], "path": ["connections","request"] } } },
+        { "name": "Respond to Request", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"connectionId\":\"REPLACE_WITH_CONNECTION_ID\",\"action\":\"ACCEPTED\"}" }, "url": { "raw": "{{base}}/connections/respond", "host": ["{{base}}"], "path": ["connections","respond"] } } },
+        { "name": "Get Friends List", "request": { "method": "GET", "url": { "raw": "{{base}}/connections", "host": ["{{base}}"], "path": ["connections"] } } },
+        { "name": "Get Pending Requests", "request": { "method": "GET", "url": { "raw": "{{base}}/connections/pending", "host": ["{{base}}"], "path": ["connections","pending"] } } },
+        { "name": "Remove Connection", "request": { "method": "DELETE", "url": { "raw": "{{base}}/connections/REPLACE_WITH_CONNECTION_ID", "host": ["{{base}}"], "path": ["connections","REPLACE_WITH_CONNECTION_ID"] } } }
+      ]
+    },
+    {
+      "name": "💬 Chat",
+      "item": [
+        { "name": "Get Conversation List (DMs)", "request": { "method": "GET", "url": { "raw": "{{base}}/chats/conversations", "host": ["{{base}}"], "path": ["chats","conversations"] } } },
+        { "name": "Get Group Messages", "request": { "method": "GET", "url": { "raw": "{{base}}/chats/group/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["chats","group","REPLACE_WITH_EVENT_ID"] } } },
+        { "name": "Send Group Message", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"message\":\"Hey everyone! Excited for the event!\"}" }, "url": { "raw": "{{base}}/chats/group/REPLACE_WITH_EVENT_ID", "host": ["{{base}}"], "path": ["chats","group","REPLACE_WITH_EVENT_ID"] } } },
+        { "name": "Get Private Messages", "request": { "method": "GET", "url": { "raw": "{{base}}/chats/private/REPLACE_WITH_USER_ID", "host": ["{{base}}"], "path": ["chats","private","REPLACE_WITH_USER_ID"] } } },
+        { "name": "Send Private Message", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": { "mode": "raw", "raw": "{\"message\":\"Hey! How are you?\"}" }, "url": { "raw": "{{base}}/chats/private/REPLACE_WITH_USER_ID", "host": ["{{base}}"], "path": ["chats","private","REPLACE_WITH_USER_ID"] } } }
+      ]
+    }
+  ]
+}

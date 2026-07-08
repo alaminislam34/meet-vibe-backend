@@ -1,0 +1,34 @@
+model User {
+  id                  String         @id @default(uuid())
+  email               String         @unique
+  password            String?
+  name                String
+  image               String?
+  isVerified          Boolean        @default(false)
+  otpCode             String?
+  otpExpiry           DateTime?
+  provider            String         @default("LOCAL") // "LOCAL", "GOOGLE", "APPLE"
+  providerId          String?
+
+  // Identity verification
+  is18Plus            Boolean        @default(false)
+  isHuman             Boolean        @default(false)
+  govIdUrl            String?
+  faceImageUrl        String?
+  verificationStatus  String         @default("UNVERIFIED") // "UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"
+
+  // Account status
+  deletedAt           DateTime?      // Soft delete
+  deleteReason        String?
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  subscription        Subscription?
+  events              Event[]
+  participations      Participant[]
+  sentConnections     Connection[]   @relation("SentConnections")
+  receivedConnections Connection[]   @relation("ReceivedConnections")
+  sentMessages        ChatMessage[]  @relation("SentMessages")
+  receivedMessages    ChatMessage[]  @relation("ReceivedMessages")
+}

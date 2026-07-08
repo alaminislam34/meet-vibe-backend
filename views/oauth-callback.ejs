@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication Callback</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0d0e12;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border-left-color: #6366f1;
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h2 {
+      font-weight: 500;
+      margin: 0 0 8px 0;
+      font-size: 1.25rem;
+    }
+    p {
+      color: #9ca3af;
+      margin: 0;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <h2>Completing authentication...</h2>
+  <p>Please wait, redirecting you back to Meet Vibe.</p>
+
+  <script>
+    // Configurable payload from EJS rendering engine
+    const status = "<%= status %>";
+    const message = "<%= message %>";
+    const targetUrl = "<%= targetUrl %>";
+
+    setTimeout(() => {
+      // Send message to parent window if using a popup window flow
+      if (window.opener) {
+        window.opener.postMessage({
+          type: "OAUTH_RESPONSE",
+          status: status,
+          message: message
+        }, "*");
+        window.close();
+      } else {
+        // Fallback to direct redirect for normal page transitions
+        window.location.href = targetUrl;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

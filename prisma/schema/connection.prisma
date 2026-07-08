@@ -1,0 +1,14 @@
+model Connection {
+  id              String   @id @default(uuid())
+  requesterId     String
+  receiverId      String
+  status          String   @default("PENDING") // "PENDING", "ACCEPTED", "DECLINED"
+  requestMessage  String?  // Optional message attached when sending request (like LinkedIn)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  requester       User     @relation("SentConnections", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver        User     @relation("ReceivedConnections", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+}

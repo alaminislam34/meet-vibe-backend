@@ -1,0 +1,23 @@
+model ChatGroup {
+  id        String        @id @default(uuid())
+  eventId   String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id          String     @id @default(uuid())
+  chatGroupId String?    // Null for private DMs
+  senderId    String
+  receiverId  String?    // Null for group messages
+  message     String
+  isRead      Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  chatGroup   ChatGroup? @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
+  sender      User       @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User?      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+}
