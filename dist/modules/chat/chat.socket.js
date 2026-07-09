@@ -1,5 +1,5 @@
-import { verifyToken } from "../../utils/jwt.js";
 import { prisma } from "../../config/db.js";
+import { verifyAccessToken } from "../../utils/jwt.js";
 import { PARTICIPANT_STATUS, CONNECTION_STATUS, EVENT_STATUS } from "../../constants/index.js";
 export const initializeChatSockets = (io) => {
     // 1. WebSocket Authorization Middleware
@@ -13,12 +13,16 @@ export const initializeChatSockets = (io) => {
             if (!token) {
                 return next(new Error("Authentication error: Session token required"));
             }
-            const decoded = verifyToken(token);
+            // Verify JWT Access Token
+            const payload = verifyAccessToken(token);
             const user = await prisma.user.findUnique({
-                where: { id: decoded.userId },
+                where: { id: payload.userId },
             });
             if (!user) {
-                return next(new Error("Authentication error: User not found"));
+                return next(new Error("Authentication error: Invalid user"));
+            }
+            if (user.deletedAt) {
+                return next(new Error("Authentication error: User account no longer exists"));
             }
             // Attach authenticated user to socket instance
             socket.user = user;

@@ -22,12 +22,10 @@ const io = new Server(server, {
   },
 });
 
-// Bind WebSocket Chat handlers
 initializeChatSockets(io);
 
 const startServer = async () => {
   try {
-    // Verify database connection on boot
     await prisma.$connect();
     console.log("✅ Database connection established successfully.");
 
@@ -43,7 +41,6 @@ const startServer = async () => {
 
 startServer();
 
-// Handle unhandled promise rejections gracefully
 process.on("unhandledRejection", (err: any) => {
   console.error("💥 UNHANDLED REJECTION! Shutting down server gracefully...");
   console.error(err?.name, err?.message);

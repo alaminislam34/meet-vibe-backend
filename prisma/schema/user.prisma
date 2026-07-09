@@ -1,14 +1,9 @@
 model User {
   id                  String         @id @default(uuid())
   email               String         @unique
-  password            String?
   name                String
   image               String?
   isVerified          Boolean        @default(false)
-  otpCode             String?
-  otpExpiry           DateTime?
-  provider            String         @default("LOCAL") // "LOCAL", "GOOGLE", "APPLE"
-  providerId          String?
 
   // Identity verification
   is18Plus            Boolean        @default(false)
@@ -24,6 +19,16 @@ model User {
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
+  // MFA
+  mfaEnabled          Boolean        @default(false)
+  mfaSecret           String?
+  mfaRecoveryCodes    String[]
+
+  // Better-Auth style relations
+  accounts            Account[]
+  sessions            Session[]
+  auditLogs           AuditLog[]
+
   subscription        Subscription?
   events              Event[]
   participations      Participant[]
@@ -31,4 +36,62 @@ model User {
   receivedConnections Connection[]   @relation("ReceivedConnections")
   sentMessages        ChatMessage[]  @relation("SentMessages")
   receivedMessages    ChatMessage[]  @relation("ReceivedMessages")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId            String    // "LOCAL", "GOOGLE", "APPLE"
+  accountId             String    // Provider-specific user ID (for LOCAL: email, for OAuth: provider id)
+  password              String?   // Hashed password for LOCAL provider
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  failedLoginAttempts   Int       @default(0)
+  lockedUntil           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  isRevoked Boolean  @default(false)
+  familyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String   // e.g. email or userId
+  value      String   // OTP code or verification token
+  expiresAt  DateTime
+  purpose    String   // "EMAIL_VERIFICATION", "PASSWORD_RESET", etc.
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event     String
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
 }

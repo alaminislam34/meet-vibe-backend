@@ -1,18 +1,30 @@
 import { env } from "../config/env.js";
-const COOKIE_NAME = "meet_vibe_token";
-export const setAuthCookie = (res, token) => {
-    res.cookie(COOKIE_NAME, token, {
+const ACCESS_COOKIE = "access_token";
+const REFRESH_COOKIE = "refresh_token";
+export const setAuthCookies = (res, accessToken, refreshToken) => {
+    const isProduction = env.NODE_ENV === "production";
+    const cookieOptions = {
         httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days matching token expiration
+        secure: isProduction,
+        sameSite: "strict", // Strict to prevent CSRF attacks
+    };
+    res.cookie(ACCESS_COOKIE, accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie(REFRESH_COOKIE, refreshToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 };
-export const clearAuthCookie = (res) => {
-    res.clearCookie(COOKIE_NAME, {
+export const clearAuthCookies = (res) => {
+    const isProduction = env.NODE_ENV === "production";
+    const cookieOptions = {
         httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-    });
+        secure: isProduction,
+        sameSite: "strict",
+    };
+    res.clearCookie(ACCESS_COOKIE, cookieOptions);
+    res.clearCookie(REFRESH_COOKIE, cookieOptions);
 };
 //# sourceMappingURL=cookie.js.map

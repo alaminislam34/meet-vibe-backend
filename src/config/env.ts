@@ -10,9 +10,9 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
   BACKEND_URL: z.string().url().default("http://localhost:5000"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  JWT_SECRET: z.string().min(8, "JWT_SECRET must be at least 8 characters long"),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters long"),
   JWT_EXPIRES_IN: z.string().default("7d"),
-  
+
   // Google OAuth Config
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -31,9 +31,10 @@ const envSchema = z.object({
   AWS_REGION: z.string().optional(),
   AWS_S3_BUCKET_NAME: z.string().optional(),
 
-  // Stripe Config
-  STRIPE_API_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Payment Gateway Config (Apple Pay / Google Pay)
+  // TODO: Add specific env variables when implementing payments
+  GOOGLE_PAY_MERCHANT_ID: z.string().optional(),
+  APPLE_PAY_MERCHANT_ID: z.string().optional(),
 
   // SMTP Mail Config
   SMTP_HOST: z.string().optional(),
@@ -42,9 +43,6 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
 
-  // Better Auth
-  BETTER_AUTH_SECRET: z.string().default("development-auth-secret-key-at-least-32-characters-long"),
-  BETTER_AUTH_URL: z.string().optional(),
 });
 
 // Run validation

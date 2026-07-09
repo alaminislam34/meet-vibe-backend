@@ -3,7 +3,7 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/errors.js";
 import { HTTP_STATUS, VERIFICATION_STATUS } from "../../constants/index.js";
 import { AuthenticatedRequest } from "../../middlewares/auth.js";
-import { clearAuthCookie } from "../../utils/cookie.js";
+import { clearAuthCookies } from "../../utils/cookie.js";
 
 // ─── Get My Profile ──────────────────────────────────────────────────────────
 
@@ -15,7 +15,12 @@ export const getProfile = async (
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      include: { subscription: true },
+      include: {
+        subscription: true,
+        accounts: {
+          select: { providerId: true },
+        },
+      },
     });
 
     if (!user) {
@@ -30,7 +35,7 @@ export const getProfile = async (
           email: user.email,
           name: user.name,
           image: user.image,
-          provider: user.provider,
+          provider: user.accounts[0]?.providerId || "LOCAL",
           isVerified: user.isVerified,
           verificationStatus: user.verificationStatus,
           is18Plus: user.is18Plus,
@@ -157,13 +162,20 @@ export const deleteAccount = async (
         email: `deleted_${req.user!.id}@removed.local`,
         name: "Deleted User",
         image: null,
-        password: null,
-        otpCode: null,
-        otpExpiry: null,
       },
     });
 
-    clearAuthCookie(res);
+    // Remove active sessions
+    await prisma.session.deleteMany({
+      where: { userId: req.user!.id },
+    });
+
+    // Remove accounts credentials/info
+    await prisma.account.deleteMany({
+      where: { userId: req.user!.id },
+    });
+
+    clearAuthCookies(res);
 
     res.status(HTTP_STATUS.OK).json({
       status: "success",

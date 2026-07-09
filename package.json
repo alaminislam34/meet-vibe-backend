@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "prisma:generate": "prisma generate --schema ./prisma/schema",
-    "prisma:migrate": "prisma migrate dev --schema ./prisma/schema",
-    "prisma:studio": "prisma studio --schema ./prisma/schema",
+    "generate": "prisma generate --schema ./prisma/schema",
+    "migrate": "prisma migrate dev --schema ./prisma/schema",
+    "studio": "prisma studio --schema ./prisma/schema",
+    "reset": "prisma migrate reset --schema ./prisma/schema",
     "start": "node dist/server.js"
   },
   "keywords": [],
@@ -17,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "bcrypt": "^5.1.1",
+    "argon2": "^0.44.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -28,11 +29,13 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.3",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.7.5",
+    "speakeasy": "^2.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
     "@types/ejs": "^3.1.5",
@@ -41,6 +44,9 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.11",
     "@types/node": "^20.14.9",
+    "@types/nodemailer": "^8.0.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/speakeasy": "^2.0.10",
     "prisma": "^6.19.3",
     "tsx": "^4.16.2",
     "typescript": "^5.5.2"

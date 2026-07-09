@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/errors.js";
 
+const isDev = process.env.NODE_ENV === "development";
+
 export const errorHandler = (
   err: any,
   req: Request,
@@ -18,7 +20,6 @@ export const errorHandler = (
     console.warn(`[API WARNING] ${req.method} ${req.path}: ${message}`);
   }
 
-  const isDev = process.env.NODE_ENV === "development";
 
   res.status(statusCode).json({
     status: "error",

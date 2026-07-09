@@ -15,6 +15,13 @@ export const loginSchema = z.object({
   }),
 });
 
+export const mfaLoginSchema = z.object({
+  body: z.object({
+    mfaToken: z.string().min(1, "MFA token is required"),
+    mfaCode: z.string().min(6, "MFA code is required"),
+  }),
+});
+
 export const verifyOtpSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email address"),

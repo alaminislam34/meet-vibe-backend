@@ -1,21 +1,38 @@
 import { Response } from "express";
 import { env } from "../config/env.js";
 
-const COOKIE_NAME = "meet_vibe_token";
+const ACCESS_COOKIE = "access_token";
+const REFRESH_COOKIE = "refresh_token";
 
-export const setAuthCookie = (res: Response, token: string): void => {
-  res.cookie(COOKIE_NAME, token, {
+export const setAuthCookies = (res: Response, accessToken: string, refreshToken: string): void => {
+  const isProduction = env.NODE_ENV === "production";
+  
+  const cookieOptions = {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days matching token expiration
+    secure: isProduction,
+    sameSite: "strict" as const, // Strict to prevent CSRF attacks
+  };
+
+  res.cookie(ACCESS_COOKIE, accessToken, {
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  res.cookie(REFRESH_COOKIE, refreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
 
-export const clearAuthCookie = (res: Response): void => {
-  res.clearCookie(COOKIE_NAME, {
+export const clearAuthCookies = (res: Response): void => {
+  const isProduction = env.NODE_ENV === "production";
+  
+  const cookieOptions = {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-  });
+    secure: isProduction,
+    sameSite: "strict" as const,
+  };
+
+  res.clearCookie(ACCESS_COOKIE, cookieOptions);
+  res.clearCookie(REFRESH_COOKIE, cookieOptions);
 };
