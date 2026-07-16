@@ -15,6 +15,9 @@ import {
   setupMfa,
   verifyMfa,
   mfaLogin,
+  requestMfaRecoveryOtp,
+  verifyMfaRecoveryOtp,
+  disableMfa,
 } from "./auth.controller.js";
 import { validate } from "../../middlewares/validate.js";
 import {
@@ -25,6 +28,9 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   mfaLoginSchema,
+  mfaRequestRecoveryOtpSchema,
+  mfaVerifyRecoveryOtpSchema,
+  mfaDisableSchema,
 } from "./auth.validator.js";
 import { authLimiter } from "../../middlewares/limiter.js";
 import { requireAuth } from "../../middlewares/auth.js";
@@ -44,6 +50,9 @@ router.post("/reset-password", authLimiter, validate(resetPasswordSchema), reset
 router.post("/mfa/login", authLimiter, validate(mfaLoginSchema), mfaLogin);
 router.post("/mfa/setup", requireAuth, setupMfa);
 router.post("/mfa/verify", requireAuth, verifyMfa);
+router.post("/mfa/request-recovery-otp", authLimiter, validate(mfaRequestRecoveryOtpSchema), requestMfaRecoveryOtp);
+router.post("/mfa/verify-recovery-otp", authLimiter, validate(mfaVerifyRecoveryOtpSchema), verifyMfaRecoveryOtp);
+router.post("/mfa/disable", requireAuth, validate(mfaDisableSchema), disableMfa);
 
 router.get("/google", googleLogin);
 router.get("/google/callback", googleCallback);
@@ -51,3 +60,4 @@ router.get("/apple", appleLogin);
 router.post("/apple/callback", appleCallback);
 
 export default router;
+

@@ -31,7 +31,7 @@ const startServer = async () => {
 
     server.listen(env.PORT, () => {
       console.log(`🚀 Server listening on port ${env.PORT} in ${env.NODE_ENV} mode`);
-      console.log(`🔗 API Base URL: ${env.BACKEND_URL}/api/v1`);
+      console.log(`🔗 API Base URL: ${env.BACKEND_URL}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server due to database connection error:", error);

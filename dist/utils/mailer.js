@@ -77,4 +77,37 @@ export const sendPasswordResetEmail = async (to, otp) => {
         throw new Error("Failed to send email. Please try again later.");
     }
 };
+export const sendMfaRecoveryEmail = async (to, otp) => {
+    if (!env.SMTP_HOST || !env.SMTP_USER) {
+        console.log(`[Development Mode] Mock MFA Recovery Email to ${to}. OTP: ${otp}`);
+        return;
+    }
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
+        <h2 style="color: white; margin: 0;">Meet Vibe MFA Recovery</h2>
+      </div>
+      <div style="padding: 30px; text-align: center;">
+        <p style="font-size: 16px; color: #333;">Use the following OTP code to bypass MFA and log in to your account:</p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h1 style="margin: 0; font-size: 32px; letter-spacing: 5px; color: #1f2937;">${otp}</h1>
+        </div>
+        <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">This code will expire in 10 minutes.</p>
+        <p style="font-size: 14px; color: #6b7280;">If you did not request this recovery, please change your password immediately.</p>
+      </div>
+    </div>
+  `;
+    try {
+        await transporter.sendMail({
+            from: env.SMTP_FROM || '"Meet Vibe" <noreply@meetvibe.com>',
+            to,
+            subject: "MFA Recovery OTP - Meet Vibe",
+            html: htmlContent,
+        });
+    }
+    catch (error) {
+        console.error("Failed to send MFA recovery email:", error);
+        throw new Error("Failed to send email. Please try again later.");
+    }
+};
 //# sourceMappingURL=mailer.js.map

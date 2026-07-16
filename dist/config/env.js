@@ -35,6 +35,10 @@ const envSchema = z.object({
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
     SMTP_FROM: z.string().optional(),
+    // Stripe Config
+    STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    STRIPE_PREMIUM_PRICE_ID: z.string().optional(),
 });
 // Run validation
 const parsedEnv = envSchema.safeParse(process.env);

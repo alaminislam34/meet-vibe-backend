@@ -2,6 +2,8 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/errors.js";
 import { HTTP_STATUS, VERIFICATION_STATUS } from "../../constants/index.js";
 import { clearAuthCookies } from "../../utils/cookie.js";
+import { createIdentitySession } from "../../utils/stripe.js";
+import { env } from "../../config/env.js";
 // ─── Get My Profile ──────────────────────────────────────────────────────────
 export const getProfile = async (req, res, next) => {
     try {
@@ -26,7 +28,7 @@ export const getProfile = async (req, res, next) => {
                     name: user.name,
                     image: user.image,
                     provider: user.accounts[0]?.providerId || "LOCAL",
-                    isVerified: user.isVerified,
+                    isEmailVerified: user.isEmailVerified,
                     verificationStatus: user.verificationStatus,
                     is18Plus: user.is18Plus,
                     isHuman: user.isHuman,
@@ -72,39 +74,34 @@ export const updateProfile = async (req, res, next) => {
 // Accepts govId + selfie uploads. In production, call AWS Rekognition / Stripe Identity.
 export const verifyIdentity = async (req, res, next) => {
     try {
-        const files = req.files;
-        const govId = files?.govId?.[0];
-        const selfie = files?.selfie?.[0];
-        if (!govId || !selfie) {
-            throw new AppError("Both govId and selfie files are required.", HTTP_STATUS.BAD_REQUEST);
+        const userId = req.user.id;
+        // Check if user is already verified
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
         }
-        // ── PRODUCTION INTEGRATION POINT ─────────────────────────────────────────
-        // 1. Upload files to AWS S3
-        // 2. Call AWS Rekognition DetectFaces to confirm selfie contains 1 human face → isHuman
-        // 3. Call AWS Rekognition CompareFaces to confirm selfie matches gov ID photo
-        // 4. Parse/OCR gov ID date-of-birth → calculate age → is18Plus
-        // OR use Stripe Identity for a managed KYC flow
-        // ──────────────────────────────────────────────────────────────────────────
-        // Simulated successful verification (replace with real logic)
-        const govIdUrl = `https://s3.amazonaws.com/meet-vibe-uploads/govid/${req.user.id}.jpg`;
-        const faceImageUrl = `https://s3.amazonaws.com/meet-vibe-uploads/selfie/${req.user.id}.jpg`;
-        const updated = await prisma.user.update({
-            where: { id: req.user.id },
+        if (user.verificationStatus === VERIFICATION_STATUS.VERIFIED) {
+            throw new AppError("Identity is already verified.", HTTP_STATUS.BAD_REQUEST);
+        }
+        // Create VerificationSession using Stripe
+        const session = await createIdentitySession(userId);
+        // Update user status to PENDING and store session ID
+        await prisma.user.update({
+            where: { id: userId },
             data: {
-                govIdUrl,
-                faceImageUrl,
-                is18Plus: true, // Set by real AI check in production
-                isHuman: true, // Set by face-mesh AI check in production
-                verificationStatus: VERIFICATION_STATUS.VERIFIED,
+                verificationStatus: VERIFICATION_STATUS.PENDING,
+                govIdUrl: session.id,
             },
         });
         res.status(HTTP_STATUS.OK).json({
             status: "success",
-            message: "Identity verified successfully.",
+            message: "Stripe Identity Verification Session created successfully.",
             data: {
-                verificationStatus: updated.verificationStatus,
-                is18Plus: updated.is18Plus,
-                isHuman: updated.isHuman,
+                url: session.url,
+                clientSecret: session.client_secret,
+                status: session.status,
             },
         });
     }
@@ -140,6 +137,36 @@ export const deleteAccount = async (req, res, next) => {
         res.status(HTTP_STATUS.OK).json({
             status: "success",
             message: "Your account has been deleted.",
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+// ─── Mock Identity Verification (Development Only) ───────────────────────────
+export const mockVerifyIdentity = async (req, res, next) => {
+    try {
+        if (env.NODE_ENV !== "development") {
+            throw new AppError("This endpoint is only available in development mode.", HTTP_STATUS.FORBIDDEN);
+        }
+        const userId = req.user.id;
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                verificationStatus: VERIFICATION_STATUS.VERIFIED,
+                is18Plus: true,
+                isHuman: true,
+                govIdUrl: "vs_mock_verification_session",
+            },
+        });
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            message: "Identity verified successfully (MOCKED).",
+            data: {
+                verificationStatus: updated.verificationStatus,
+                is18Plus: updated.is18Plus,
+                isHuman: updated.isHuman,
+            },
         });
     }
     catch (error) {

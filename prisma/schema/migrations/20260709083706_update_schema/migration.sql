@@ -101,7 +101,7 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT,
-    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
     "is18Plus" BOOLEAN NOT NULL DEFAULT false,
     "isHuman" BOOLEAN NOT NULL DEFAULT false,
     "govIdUrl" TEXT,

@@ -3,6 +3,7 @@ model Subscription {
   userId    String   @unique
   plan      String   // e.g. "FREE", "MONTHLY_STANDARD", "YEARLY_PREMIUM"
   status    String   // "ACTIVE", "EXPIRED", "CANCELLED"
+  stripeSubscriptionId String?
   startDate DateTime
   endDate   DateTime
   createdAt DateTime @default(now())

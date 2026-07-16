@@ -48,3 +48,27 @@ export const resetPasswordSchema = z.object({
     password: z.string().min(8, "Password must be at least 8 characters"),
   }),
 });
+
+export const mfaRequestRecoveryOtpSchema = z.object({
+  body: z.object({
+    mfaToken: z.string().min(1, "MFA token is required"),
+  }),
+});
+
+export const mfaVerifyRecoveryOtpSchema = z.object({
+  body: z.object({
+    mfaToken: z.string().min(1, "MFA token is required"),
+    otp: z.string().length(6, "OTP must be 6 digits"),
+  }),
+});
+
+export const mfaDisableSchema = z.object({
+  body: z.object({
+    password: z.string().optional(),
+    code: z.string().optional(),
+  }).refine((data) => data.password || data.code, {
+    message: "Either current password or MFA code is required to disable MFA",
+    path: ["password"],
+  }),
+});
+

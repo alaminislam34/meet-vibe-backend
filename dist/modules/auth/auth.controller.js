@@ -261,4 +261,46 @@ export const mfaLogin = async (req, res, next) => {
         next(error);
     }
 };
+export const requestMfaRecoveryOtp = async (req, res, next) => {
+    try {
+        const { mfaToken } = req.body;
+        await authService.requestMfaRecoveryOtp({ mfaToken });
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            message: "An MFA recovery OTP code has been sent to your registered email.",
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+export const verifyMfaRecoveryOtp = async (req, res, next) => {
+    try {
+        const { mfaToken, otp } = req.body;
+        const { user, accessToken, refreshToken } = await authService.verifyMfaRecoveryOtp({ mfaToken, otp }, getRequestContext(req));
+        setAuthCookies(res, accessToken, refreshToken);
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            message: "MFA bypassed and login successful.",
+            data: { user },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+export const disableMfa = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { password, code } = req.body;
+        await authService.disableMfa(userId, { password, code });
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            message: "MFA disabled successfully.",
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
 //# sourceMappingURL=auth.controller.js.map

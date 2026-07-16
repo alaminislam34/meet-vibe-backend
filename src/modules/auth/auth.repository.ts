@@ -41,6 +41,17 @@ export class AuthRepository {
   }
 
   /**
+   * Finds a user by ID and eagerly loads all their accounts.
+   */
+  async findUserWithAccounts(id: string): Promise<UserWithAccounts | null> {
+    return prisma.user.findUnique({
+      where: { id },
+      include: { accounts: true },
+    });
+  }
+
+
+  /**
    * Finds a user by email and eagerly loads their LOCAL provider account.
    * The join is filtered to the LOCAL provider to avoid loading OAuth accounts
    * during password-based login — minimizes data transfer.
@@ -65,19 +76,19 @@ export class AuthRepository {
       data: {
         email: data.email,
         name: data.name,
-        isVerified: false,
+        isEmailVerified: false,
       },
     });
   }
 
   /**
-   * Marks a user's email as verified by setting `isVerified = true`.
+   * Marks a user's email as verified by setting `isEmailVerified = true`.
    * Called after successful OTP validation to unlock full account access.
    */
   async markUserVerified(userId: string): Promise<User> {
     return prisma.user.update({
       where: { id: userId },
-      data: { isVerified: true },
+      data: { isEmailVerified: true },
     });
   }
 

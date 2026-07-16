@@ -1,50 +1,51 @@
 model User {
-  id                  String         @id @default(uuid())
-  email               String         @unique
-  name                String
-  image               String?
-  isVerified          Boolean        @default(false)
+  id              String  @id @default(uuid())
+  email           String  @unique
+  name            String
+  image           String?
+  isEmailVerified Boolean @default(false)
+  stripeCustomerId String?
 
   // Identity verification
-  is18Plus            Boolean        @default(false)
-  isHuman             Boolean        @default(false)
-  govIdUrl            String?
-  faceImageUrl        String?
-  verificationStatus  String         @default("UNVERIFIED") // "UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"
+  is18Plus           Boolean @default(false)
+  isHuman            Boolean @default(false)
+  govIdUrl           String?
+  faceImageUrl       String?
+  verificationStatus String  @default("UNVERIFIED") // "UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"
 
   // Account status
-  deletedAt           DateTime?      // Soft delete
-  deleteReason        String?
+  deletedAt    DateTime? // Soft delete
+  deleteReason String?
 
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // MFA
-  mfaEnabled          Boolean        @default(false)
-  mfaSecret           String?
-  mfaRecoveryCodes    String[]
+  mfaEnabled       Boolean  @default(false)
+  mfaSecret        String?
+  mfaRecoveryCodes String[]
 
   // Better-Auth style relations
-  accounts            Account[]
-  sessions            Session[]
-  auditLogs           AuditLog[]
+  accounts  Account[]
+  sessions  Session[]
+  auditLogs AuditLog[]
 
   subscription        Subscription?
   events              Event[]
   participations      Participant[]
-  sentConnections     Connection[]   @relation("SentConnections")
-  receivedConnections Connection[]   @relation("ReceivedConnections")
-  sentMessages        ChatMessage[]  @relation("SentMessages")
-  receivedMessages    ChatMessage[]  @relation("ReceivedMessages")
+  sentConnections     Connection[]  @relation("SentConnections")
+  receivedConnections Connection[]  @relation("ReceivedConnections")
+  sentMessages        ChatMessage[] @relation("SentMessages")
+  receivedMessages    ChatMessage[] @relation("ReceivedMessages")
 }
 
 model Account {
   id                    String    @id @default(uuid())
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  providerId            String    // "LOCAL", "GOOGLE", "APPLE"
-  accountId             String    // Provider-specific user ID (for LOCAL: email, for OAuth: provider id)
-  password              String?   // Hashed password for LOCAL provider
+  providerId            String // "LOCAL", "GOOGLE", "APPLE"
+  accountId             String // Provider-specific user ID (for LOCAL: email, for OAuth: provider id)
+  password              String? // Hashed password for LOCAL provider
   accessToken           String?
   refreshToken          String?
   accessTokenExpiresAt  DateTime?
@@ -75,10 +76,10 @@ model Session {
 
 model Verification {
   id         String   @id @default(uuid())
-  identifier String   // e.g. email or userId
-  value      String   // OTP code or verification token
+  identifier String // e.g. email or userId
+  value      String // OTP code or verification token
   expiresAt  DateTime
-  purpose    String   // "EMAIL_VERIFICATION", "PASSWORD_RESET", etc.
+  purpose    String // "EMAIL_VERIFICATION", "PASSWORD_RESET", etc.
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

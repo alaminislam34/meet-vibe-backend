@@ -20,6 +20,16 @@ export interface MfaLoginDTO {
   mfaCode: string;
 }
 
+export interface MfaRequestRecoveryOtpDTO {
+  mfaToken: string;
+}
+
+export interface MfaVerifyRecoveryOtpDTO {
+  mfaToken: string;
+  otp: string;
+}
+
+
 export interface VerifyOtpDTO {
   email: string;
   otp: string;
@@ -58,7 +68,7 @@ export type SafeUser = Pick<
   | "email"
   | "name"
   | "image"
-  | "isVerified"
+  | "isEmailVerified"
   | "verificationStatus"
   | "is18Plus"
   | "isHuman"
@@ -124,7 +134,7 @@ export interface FindVerificationInput {
 // Typed string literal union for verification purposes — avoids magic strings
 // scattered across the codebase. Use this everywhere instead of raw strings.
 
-export type VerificationPurpose = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
+export type VerificationPurpose = "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "MFA_RECOVERY";
 
 export type OAuthProvider = "GOOGLE" | "APPLE";
 

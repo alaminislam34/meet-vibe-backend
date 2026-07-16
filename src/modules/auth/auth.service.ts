@@ -4,7 +4,7 @@ import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import { generateAccessToken, generateMfaToken, verifyMfaToken } from "../../utils/jwt.js";
 import { auditLogger } from "../../utils/auditLogger.js";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../../utils/mailer.js";
+import { sendVerificationEmail, sendPasswordResetEmail, sendMfaRecoveryEmail } from "../../utils/mailer.js";
 import { AuthRepository } from "./auth.repository.js";
 import { AppError } from "../../utils/errors.js";
 import { HTTP_STATUS } from "../../constants/index.js";
@@ -21,6 +21,8 @@ import {
   VerificationPurpose,
   MfaLoginDTO,
   LoginResult,
+  MfaRequestRecoveryOtpDTO,
+  MfaVerifyRecoveryOtpDTO,
 } from "./auth.types.js";
 import { User } from "@prisma/client";
 
@@ -39,7 +41,7 @@ export class AuthService {
    * This decoupling allows unit tests to inject a mock repository without
    * touching Prisma or the actual database.
    */
-  constructor(private readonly repository: AuthRepository) {}
+  constructor(private readonly repository: AuthRepository) { }
 
   // ─── Private Helpers ──────────────────────────────────────────────────────
 
@@ -87,7 +89,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       image: user.image,
-      isVerified: user.isVerified,
+      isEmailVerified: user.isEmailVerified,
       verificationStatus: user.verificationStatus,
       is18Plus: user.is18Plus,
       isHuman: user.isHuman,
@@ -191,7 +193,7 @@ export class AuthService {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
     }
-    if (user.isVerified) {
+    if (user.isEmailVerified) {
       throw new AppError("Email is already verified", HTTP_STATUS.BAD_REQUEST);
     }
 
@@ -230,7 +232,7 @@ export class AuthService {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
     }
-    if (user.isVerified) {
+    if (user.isEmailVerified) {
       throw new AppError("Email is already verified", HTTP_STATUS.BAD_REQUEST);
     }
 
@@ -280,7 +282,7 @@ export class AuthService {
       throw new AppError("Invalid email or password", HTTP_STATUS.UNAUTHORIZED);
     }
 
-    if (!user.isVerified) {
+    if (!user.isEmailVerified) {
       await auditLogger.log({
         userId: user.id,
         event: "LOGIN_FAILURE",
@@ -637,5 +639,114 @@ export class AuthService {
 
     const tokens = await this.createTokens(user.id, context);
     return { user: this.toSafeUser(user), ...tokens };
+  }
+
+  /**
+   * Generates a temporary MFA recovery OTP and sends it to the user's registered email.
+   */
+  async requestMfaRecoveryOtp(dto: MfaRequestRecoveryOtpDTO): Promise<void> {
+    const userId = verifyMfaToken(dto.mfaToken);
+
+    const user = await this.repository.findUserById(userId);
+    if (!user || !user.mfaEnabled) {
+      throw new AppError("MFA is not enabled for this user", HTTP_STATUS.BAD_REQUEST);
     }
+
+    const code = await this.issueOtp(user.id, "MFA_RECOVERY");
+
+    await sendMfaRecoveryEmail(user.email, code);
+  }
+
+  /**
+   * Verifies the MFA recovery OTP sent to the email and logs the user in.
+   */
+  async verifyMfaRecoveryOtp(dto: MfaVerifyRecoveryOtpDTO, context?: RequestContext): Promise<AuthResult> {
+    const userId = verifyMfaToken(dto.mfaToken);
+
+    const user = await this.repository.findUserById(userId);
+    if (!user || !user.mfaEnabled) {
+      throw new AppError("MFA is not enabled for this user", HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const verification = await this.repository.findVerification({
+      identifier: user.id,
+      value: dto.otp,
+    });
+
+    if (
+      !verification ||
+      verification.purpose !== "MFA_RECOVERY" ||
+      verification.expiresAt < new Date()
+    ) {
+      throw new AppError("Invalid or expired OTP code", HTTP_STATUS.BAD_REQUEST);
+    }
+
+    await this.repository.deleteVerificationById(verification.id);
+
+    const tokens = await this.createTokens(user.id, context);
+
+    await auditLogger.log({
+      userId: user.id,
+      event: "LOGIN_SUCCESS",
+      ipAddress: context?.ipAddress,
+      userAgent: context?.userAgent,
+      metadata: { note: "Logged in via Email MFA Recovery OTP" },
+    });
+
+    return { user: this.toSafeUser(user), ...tokens };
+  }
+
+  /**
+   * Disables MFA for the user after verifying their current password or a valid MFA code.
+   */
+  async disableMfa(userId: string, dto: { password?: string; code?: string }): Promise<void> {
+    const user = await this.repository.findUserWithAccounts(userId);
+    if (!user) {
+      throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
+    }
+
+    if (!user.mfaEnabled || !user.mfaSecret) {
+      throw new AppError("MFA is not enabled", HTTP_STATUS.BAD_REQUEST);
+    }
+
+    if (dto.code) {
+      // Verify using TOTP code
+      const isValid = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: "base32",
+        token: dto.code,
+        window: 1,
+      });
+
+      if (!isValid) {
+        throw new AppError("Invalid MFA code", HTTP_STATUS.UNAUTHORIZED);
+      }
+    } else if (dto.password) {
+      // Verify using password (for LOCAL accounts)
+      const localAccount = user.accounts.find((acc) => acc.providerId === "LOCAL");
+      if (!localAccount || !localAccount.password) {
+        throw new AppError(
+          "Password verification is not available for this account. Please use MFA code.",
+          HTTP_STATUS.BAD_REQUEST
+        );
+      }
+
+      const isMatch = await argon2.verify(localAccount.password, dto.password);
+      if (!isMatch) {
+        throw new AppError("Incorrect password", HTTP_STATUS.UNAUTHORIZED);
+      }
+    } else {
+      throw new AppError("Either current password or MFA code is required", HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Disable MFA
+    await this.repository.updateUserMfaStatus(userId, false, null, []);
+
+    await auditLogger.log({
+      userId: user.id,
+      event: "MFA_DISABLED",
+      metadata: { disabledBy: "user" },
+    });
+  }
 }
+

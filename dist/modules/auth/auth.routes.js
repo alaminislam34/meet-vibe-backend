@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { register, verifyOtp, resendOtp, login, logout, refresh, googleLogin, googleCallback, appleLogin, appleCallback, forgotPassword, resetPassword, setupMfa, verifyMfa, mfaLogin, } from "./auth.controller.js";
+import { register, verifyOtp, resendOtp, login, logout, refresh, googleLogin, googleCallback, appleLogin, appleCallback, forgotPassword, resetPassword, setupMfa, verifyMfa, mfaLogin, requestMfaRecoveryOtp, verifyMfaRecoveryOtp, disableMfa, } from "./auth.controller.js";
 import { validate } from "../../middlewares/validate.js";
-import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema, forgotPasswordSchema, resetPasswordSchema, mfaLoginSchema, } from "./auth.validator.js";
+import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema, forgotPasswordSchema, resetPasswordSchema, mfaLoginSchema, mfaRequestRecoveryOtpSchema, mfaVerifyRecoveryOtpSchema, mfaDisableSchema, } from "./auth.validator.js";
 import { authLimiter } from "../../middlewares/limiter.js";
 import { requireAuth } from "../../middlewares/auth.js";
 const router = Router();
@@ -17,6 +17,9 @@ router.post("/reset-password", authLimiter, validate(resetPasswordSchema), reset
 router.post("/mfa/login", authLimiter, validate(mfaLoginSchema), mfaLogin);
 router.post("/mfa/setup", requireAuth, setupMfa);
 router.post("/mfa/verify", requireAuth, verifyMfa);
+router.post("/mfa/request-recovery-otp", authLimiter, validate(mfaRequestRecoveryOtpSchema), requestMfaRecoveryOtp);
+router.post("/mfa/verify-recovery-otp", authLimiter, validate(mfaVerifyRecoveryOtpSchema), verifyMfaRecoveryOtp);
+router.post("/mfa/disable", requireAuth, validate(mfaDisableSchema), disableMfa);
 router.get("/google", googleLogin);
 router.get("/google/callback", googleCallback);
 router.get("/apple", appleLogin);

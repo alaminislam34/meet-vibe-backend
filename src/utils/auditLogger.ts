@@ -6,7 +6,10 @@ export type AuditEvent =
   | "PASSWORD_RESET"
   | "ACCOUNT_LOCKED"
   | "LOGOUT"
-  | "REGISTER";
+  | "REGISTER"
+  | "MFA_ENABLED"
+  | "MFA_DISABLED";
+
 
 interface AuditLogInput {
   userId?: string;
