@@ -8,8 +8,22 @@ export const step1Schema = z.object({
     category: z.string().min(1, "Category is required"),
     eventType: z.string().min(1, "Event type is required"),
     capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
-    isFree: z.boolean(),
+    isFree: z.preprocess((val) => {
+      if (typeof val === "string") {
+        if (val.toLowerCase() === "true") return true;
+        if (val.toLowerCase() === "false") return false;
+      }
+      return val;
+    }, z.boolean()),
     price: z.coerce.number().min(0).optional(),
+    isDepositModel: z.preprocess((val) => {
+      if (typeof val === "string") {
+        if (val.toLowerCase() === "true") return true;
+        if (val.toLowerCase() === "false") return false;
+      }
+      return val;
+    }, z.boolean()).optional(),
+    refundPenaltyRate: z.coerce.number().min(0).max(1).optional(),
   }),
 });
 
