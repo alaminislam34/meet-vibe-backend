@@ -4,6 +4,9 @@ model Subscription {
   plan      String   // e.g. "FREE", "MONTHLY_STANDARD", "YEARLY_PREMIUM"
   status    String   // "ACTIVE", "EXPIRED", "CANCELLED"
   stripeSubscriptionId String?
+  platform  String?  // "STRIPE", "APPLE", "GOOGLE"
+  transactionId String?
+  purchaseToken String?
   startDate DateTime
   endDate   DateTime
   createdAt DateTime @default(now())

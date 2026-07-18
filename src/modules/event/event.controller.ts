@@ -37,7 +37,7 @@ export const saveStep1 = async (
     const userId = req.user!.id;
     await requireActiveSubscription(userId);
 
-    const { eventId, title, category, eventType, capacity, isFree, price } = req.body;
+    const { eventId, title, category, eventType, capacity, isFree, price, isDepositModel, refundPenaltyRate } = req.body;
     const coverImage = (req.file as Express.Multer.File | undefined)?.path ?? undefined;
 
     let event;
@@ -52,6 +52,8 @@ export const saveStep1 = async (
           capacity: Number(capacity),
           isFree: Boolean(isFree),
           price: isFree ? 0 : Number(price ?? 0),
+          isDepositModel: isFree ? false : isDepositModel === "true" || isDepositModel === true,
+          refundPenaltyRate: refundPenaltyRate ? Number(refundPenaltyRate) : 0.10,
           creationStep: Math.max(1, 1),
           ...(coverImage && { coverImage }),
         },
@@ -66,6 +68,8 @@ export const saveStep1 = async (
           capacity: Number(capacity),
           isFree: Boolean(isFree),
           price: isFree ? 0 : Number(price ?? 0),
+          isDepositModel: isFree ? false : isDepositModel === "true" || isDepositModel === true,
+          refundPenaltyRate: refundPenaltyRate ? Number(refundPenaltyRate) : 0.10,
           creationStep: 1,
           status: EVENT_STATUS.DRAFT,
           ...(coverImage && { coverImage }),

@@ -2,7 +2,7 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/errors.js";
 import { HTTP_STATUS, VERIFICATION_STATUS } from "../../constants/index.js";
 import { clearAuthCookies } from "../../utils/cookie.js";
-import { createIdentitySession } from "../../utils/stripe.js";
+import { createIdentitySession, createConnectAccount, createAccountLink, retrieveAccount } from "../../utils/stripe.js";
 import { env } from "../../config/env.js";
 // ─── Get My Profile ──────────────────────────────────────────────────────────
 export const getProfile = async (req, res, next) => {
@@ -166,6 +166,78 @@ export const mockVerifyIdentity = async (req, res, next) => {
                 verificationStatus: updated.verificationStatus,
                 is18Plus: updated.is18Plus,
                 isHuman: updated.isHuman,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+// ─── Stripe Connect Onboarding (Event Hosts) ─────────────────────────────────
+export const getStripeConnectOnboarding = async (req, res, next) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, email: true, name: true, stripeConnectedAccountId: true },
+        });
+        if (!user) {
+            throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
+        }
+        let accountId = user.stripeConnectedAccountId;
+        if (!accountId) {
+            const account = await createConnectAccount(user.id, user.email);
+            accountId = account.id;
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { stripeConnectedAccountId: accountId },
+            });
+        }
+        const frontendUrl = env.FRONTEND_URL || "http://localhost:3000";
+        const successUrl = `${frontendUrl}/stripe-connect/success`;
+        const refreshUrl = `${frontendUrl}/stripe-connect/refresh`;
+        const accountLink = await createAccountLink(accountId, successUrl, refreshUrl);
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            data: {
+                stripeConnectedAccountId: accountId,
+                url: accountLink.url,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+// ─── Stripe Connect Status Check ─────────────────────────────────────────────
+export const getStripeConnectStatus = async (req, res, next) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { stripeConnectedAccountId: true },
+        });
+        if (!user || !user.stripeConnectedAccountId) {
+            res.status(HTTP_STATUS.OK).json({
+                status: "success",
+                data: {
+                    connected: false,
+                    details: null,
+                },
+            });
+            return;
+        }
+        const account = await retrieveAccount(user.stripeConnectedAccountId);
+        const connected = account.charges_enabled && account.payouts_enabled;
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            data: {
+                connected: Boolean(connected),
+                chargesEnabled: account.charges_enabled,
+                payoutsEnabled: account.payouts_enabled,
+                details: {
+                    email: account.email,
+                    country: account.country,
+                    defaultCurrency: account.default_currency,
+                },
             },
         });
     }

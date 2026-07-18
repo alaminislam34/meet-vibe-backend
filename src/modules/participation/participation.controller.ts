@@ -3,6 +3,8 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/errors.js";
 import { HTTP_STATUS, PARTICIPANT_STATUS, EVENT_STATUS } from "../../constants/index.js";
 import { AuthenticatedRequest } from "../../middlewares/auth.js";
+import { getOrCreateCustomer, createCheckoutSessionForEvent, createTransferToConnectedAccount, refundPaymentIntent } from "../../utils/stripe.js";
+import { env } from "../../config/env.js";
 
 export const joinEvent = async (
   req: AuthenticatedRequest,
@@ -183,3 +185,199 @@ export const reviewParticipation = async (
     next(error);
   }
 };
+
+// ─── Create Event Checkout Session (Participant Payment / Deposit) ────────────
+
+export const createEventCheckoutSession = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { eventId } = req.body;
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event || event.status !== EVENT_STATUS.PUBLISHED) {
+      throw new AppError("Active published event not found", HTTP_STATUS.NOT_FOUND);
+    }
+
+    if (event.isFree || Number(event.price) <= 0) {
+      throw new AppError("This event is free, no payment required", HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError("User not found", HTTP_STATUS.NOT_FOUND);
+    }
+
+    const customer = await getOrCreateCustomer(user.id, user.email, user.name);
+
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:3000";
+    const successUrl = `${frontendUrl}/events/${eventId}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${frontendUrl}/events/${eventId}/payment-cancelled`;
+
+    const session = await createCheckoutSessionForEvent(
+      customer.id,
+      Number(event.price),
+      event.id,
+      user.id,
+      successUrl,
+      cancelUrl
+    );
+
+    await prisma.participant.upsert({
+      where: {
+        eventId_userId: { eventId, userId },
+      },
+      update: {
+        status: "PENDING_PAYMENT",
+      },
+      create: {
+        eventId,
+        userId,
+        status: "PENDING_PAYMENT",
+      },
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      status: "success",
+      data: {
+        checkoutUrl: session.url,
+        sessionId: session.id,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Finalize Event Attendance & Process Escrow/Payouts (Host Only) ──────────
+
+export const finalizeEventAttendance = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const hostId = req.user!.id;
+    const { eventId } = req.params;
+    const { attendance } = req.body; // Array of { userId: string, attended: boolean }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { creator: true },
+    });
+
+    if (!event) {
+      throw new AppError("Event not found", HTTP_STATUS.NOT_FOUND);
+    }
+
+    if (event.creatorId !== hostId) {
+      throw new AppError("Only the event host can finalize attendance", HTTP_STATUS.FORBIDDEN);
+    }
+
+    const host = event.creator;
+
+    if (!event.isFree && Number(event.price) > 0 && !host.stripeConnectedAccountId) {
+      throw new AppError(
+        "Host must connect their Stripe Account first to release paid event escrow.",
+        HTTP_STATUS.BAD_REQUEST
+      );
+    }
+
+    const results = [];
+
+    for (const record of attendance) {
+      const { userId, attended } = record;
+
+      const participant = await prisma.participant.findUnique({
+        where: {
+          eventId_userId: {
+            eventId,
+            userId,
+          },
+        },
+      });
+
+      if (!participant) continue;
+
+      let paymentStatus = participant.paymentStatus;
+
+      if (!event.isFree && Number(event.price) > 0 && participant.stripePaymentIntentId && participant.paymentStatus === "HELD_IN_ESCROW") {
+        try {
+          if (attended) {
+            if (event.isDepositModel) {
+              await refundPaymentIntent(participant.stripePaymentIntentId);
+              paymentStatus = "REFUNDED";
+            } else {
+              const amountInCents = Math.round(Number(event.price) * 100);
+              await createTransferToConnectedAccount(
+                amountInCents,
+                host.stripeConnectedAccountId!,
+                `event_${event.id}`
+              );
+              paymentStatus = "TRANSFERRED_TO_HOST";
+            }
+          } else {
+            if (event.isDepositModel) {
+              const penaltyRate = Number(event.refundPenaltyRate) || 0.10;
+              const refundRate = 1 - penaltyRate;
+
+              const refundAmount = Math.round(Number(event.price) * refundRate * 100);
+              const penaltyAmount = Math.round(Number(event.price) * penaltyRate * 100);
+
+              if (refundAmount > 0) {
+                await refundPaymentIntent(participant.stripePaymentIntentId, refundAmount);
+              }
+              if (penaltyAmount > 0) {
+                await createTransferToConnectedAccount(
+                  penaltyAmount,
+                  host.stripeConnectedAccountId!,
+                  `event_${event.id}`
+                );
+              }
+              paymentStatus = "REFUNDED";
+            } else {
+              const amountInCents = Math.round(Number(event.price) * 100);
+              await createTransferToConnectedAccount(
+                amountInCents,
+                host.stripeConnectedAccountId!,
+                `event_${event.id}`
+              );
+              paymentStatus = "TRANSFERRED_TO_HOST";
+            }
+          }
+        } catch (err: any) {
+          console.error(`Stripe transaction failed for participant ${userId}:`, err);
+        }
+      }
+
+      const updated = await prisma.participant.update({
+        where: { id: participant.id },
+        data: {
+          attended,
+          paymentStatus,
+          status: "APPROVED",
+        },
+      });
+
+      results.push(updated);
+    }
+
+    res.status(HTTP_STATUS.OK).json({
+      status: "success",
+      message: "Event attendance finalized and payments processed successfully.",
+      data: { results },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

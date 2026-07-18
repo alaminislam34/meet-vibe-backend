@@ -139,6 +139,31 @@ export const handleStripeWebhook = async (req: Request, res: Response): Promise<
           });
 
           console.log(`Subscription created/updated for user ${userId} to plan ${plan}`);
+        } else if (session.mode === "payment") {
+          const userId = session.metadata?.userId;
+          const eventId = session.metadata?.eventId;
+          const paymentIntentId = session.payment_intent as string;
+
+          if (userId && eventId && paymentIntentId) {
+            await prisma.participant.upsert({
+              where: {
+                eventId_userId: { eventId, userId },
+              },
+              update: {
+                status: "APPROVED",
+                stripePaymentIntentId: paymentIntentId,
+                paymentStatus: "HELD_IN_ESCROW",
+              },
+              create: {
+                eventId,
+                userId,
+                status: "APPROVED",
+                stripePaymentIntentId: paymentIntentId,
+                paymentStatus: "HELD_IN_ESCROW",
+              },
+            });
+            console.log(`Event registration payment completed for user ${userId} on event ${eventId}`);
+          }
         }
         break;
       }

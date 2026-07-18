@@ -4,6 +4,9 @@ model Participant {
   userId        String
   status        String   // "PENDING_PAYMENT", "PENDING_APPROVAL", "APPROVED", "REJECTED"
   transactionId String?  // User-submitted payment proof
+  attended      Boolean  @default(false)
+  stripePaymentIntentId String?
+  paymentStatus String   @default("UNPAID") // "UNPAID", "HELD_IN_ESCROW", "REFUNDED", "TRANSFERRED_TO_HOST"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

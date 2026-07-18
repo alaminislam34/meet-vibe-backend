@@ -12,6 +12,8 @@ model Event {
   capacity        Int           @default(0)
   isFree          Boolean       @default(true)
   price           Decimal       @default(0.00)
+  isDepositModel  Boolean       @default(false)
+  refundPenaltyRate Decimal     @default(0.10)
 
   // Step 2 – Date & Time
   startDate       DateTime?

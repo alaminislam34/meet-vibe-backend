@@ -5,6 +5,7 @@ model User {
   image           String?
   isEmailVerified Boolean @default(false)
   stripeCustomerId String?
+  stripeConnectedAccountId String?
 
   // Identity verification
   is18Plus           Boolean @default(false)

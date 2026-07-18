@@ -112,4 +112,51 @@ export const mockSubscribe = async (req, res, next) => {
         next(error);
     }
 };
+// ─── Record In-App Purchase Subscription (Apple / Google) ───────────────────
+export const recordIAPSubscription = async (req, res, next) => {
+    try {
+        const { plan, platform, transactionId, purchaseToken, endDate } = req.body;
+        if (!plan || !Object.values(SUB_PLANS).includes(plan)) {
+            throw new AppError(`Invalid subscription plan. Allowed values: ${Object.values(SUB_PLANS).join(", ")}`, HTTP_STATUS.BAD_REQUEST);
+        }
+        if (!platform || !["APPLE", "GOOGLE"].includes(platform)) {
+            throw new AppError("Invalid platform. Must be 'APPLE' or 'GOOGLE'.", HTTP_STATUS.BAD_REQUEST);
+        }
+        if (!transactionId) {
+            throw new AppError("transactionId is required to record the purchase.", HTTP_STATUS.BAD_REQUEST);
+        }
+        const startDate = new Date();
+        const calculatedEndDate = endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const subscription = await prisma.subscription.upsert({
+            where: { userId: req.user.id },
+            update: {
+                plan,
+                status: SUB_STATUS.ACTIVE,
+                platform,
+                transactionId,
+                purchaseToken: purchaseToken || null,
+                startDate,
+                endDate: calculatedEndDate,
+            },
+            create: {
+                userId: req.user.id,
+                plan,
+                status: SUB_STATUS.ACTIVE,
+                platform,
+                transactionId,
+                purchaseToken: purchaseToken || null,
+                startDate,
+                endDate: calculatedEndDate,
+            },
+        });
+        res.status(HTTP_STATUS.OK).json({
+            status: "success",
+            message: `In-app purchase for ${plan} recorded successfully.`,
+            data: { subscription },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
 //# sourceMappingURL=subscription.controller.js.map
